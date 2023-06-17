@@ -11,12 +11,15 @@ import {API, graphqlOperation} from 'aws-amplify';
 import {GraphQLResult} from '@aws-amplify/api';
 import {createTodo} from './src/graphql/mutations';
 import {listTodos} from './src/graphql/queries';
+import {
+  withAuthenticator,
+  useAuthenticator,
+} from '@aws-amplify/ui-react-native';
 
 const initialState = {name: '', description: ''};
 
 const App = () => {
   const [formState, setFormState] = useState(initialState);
-  /*  const [todos, setTodos] = useState([]); */
   const [todos, setTodos] = useState<any[]>([]);
 
   useEffect(() => {
@@ -30,9 +33,8 @@ const App = () => {
   async function fetchTodos() {
     try {
       const todoData = (await API.graphql(
-        graphqlOperation(listTodos),
+        graphqlOperation(listTodos)
       )) as GraphQLResult<any>;
-      // eslint-disable-next-line @typescript-eslint/no-shadow
       const todos = todoData.data.listTodos.items;
       setTodos(todos);
     } catch (err) {
@@ -42,7 +44,9 @@ const App = () => {
 
   async function addTodo() {
     try {
-      if (!formState.name || !formState.description) return;
+      if (!formState.name || !formState.description) {
+        return;
+      }
       const todo = {...formState};
       setTodos([...todos, todo]);
       setFormState(initialState);
@@ -52,9 +56,16 @@ const App = () => {
     }
   }
 
+  const {user, signOut} = useAuthenticator(context => [context.user]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.container}>
+        <Pressable onPress={signOut} style={styles.buttonContainer}>
+          <Text style={styles.buttonText}>
+            Hello, {user?.username}! Click here to sign out!
+          </Text>
+        </Pressable>
         <TextInput
           onChangeText={value => setInput('name', value)}
           style={styles.input}
@@ -80,12 +91,17 @@ const App = () => {
   );
 };
 
-export default App;
+export default withAuthenticator(App);
 
 const styles = StyleSheet.create({
   container: {width: 400, flex: 1, padding: 20, alignSelf: 'center'},
   todo: {marginBottom: 15},
-  input: {backgroundColor: '#ddd', marginBottom: 10, padding: 8, fontSize: 18},
+  input: {
+    backgroundColor: '#ddd',
+    marginBottom: 10,
+    padding: 8,
+    fontSize: 18,
+  },
   todoName: {fontSize: 20, fontWeight: 'bold'},
   buttonContainer: {
     alignSelf: 'center',
